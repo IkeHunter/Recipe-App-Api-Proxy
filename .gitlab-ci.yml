@@ -10,7 +10,7 @@ before_script:  # needed for most jobs
   - apk add python3  # needed for awscli
   - pip3 install awscli==1.18.8
   - docker load --input data/image.tar  # loads artifact
-  - $(aws ecr get-login --no--include-email --region us-east-1)  # run this command, then run the output of the command
+  - $(aws ecr get-login --no-include-email --region us-east-1)  # run this command, then run the output of the command
 
 Build:  # name of job
   stage: Build  # which stage its put in
