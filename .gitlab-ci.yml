@@ -1,0 +1,45 @@
+image: docker:19.03.5
+services:
+  - docker:19.03.5-dind
+  
+stages:  # used to group jobs together
+  - Build
+  - Push
+
+before_script:  # needed for most jobs
+  - apk add python3  # needed for awscli
+  - pip3 install awscli==1.18.8
+  - docker load --input data/image.tar  # loads artifact
+  - $(aws ecr get-login --no--include-email --region us-east-1)  # run this command, then run the output of the command
+
+Build:  # name of job
+  stage: Build  # which stage its put in
+  before_script: []  # overrides before script
+  script:  # script used to run job
+    - mkdir data/
+    - docker build --compress -t proxy .  # compress when doing deploy jobs, tag it proxy
+    - docker save --output data/image.tar proxy  # save image to image.tar to save as artifact
+  artifacts:
+    name: image
+    paths:
+      - data/
+
+Push Dev:  # name of job
+  stage: Push
+  script:
+    - docker tag proxy:latest $ECR_REPO:dev  # tag with repo name
+    - docker push $ECR_REPO:dev
+  rules:
+    - if: "$CI_COMMIT_BRANCH == 'main'"  # can only run if branch is main
+
+Push Release:
+  stage: Push
+  script:
+    - export TAGGED_ECR_REPO=$ECR_REPO:$(echo $CI_COMMIT_TAG | sed 's/-release//')  # sed strips off -release from commit tag to leave just version name
+    - docker tag proxy:latest $TAGGED_ECR_REPO
+    - docker push $TAGGED_ECR_REPO
+    - docker tag $TAGGED_ECR_REPO $ECR_REPO:latest  # tag with :latest to show latest version
+    - docker push $ECR_REPO:latest
+  rules:
+    - if: "$CI_COMMIT_TAG =~ /^*-release$/"  # identifies regex, any tag that ends with release
+
