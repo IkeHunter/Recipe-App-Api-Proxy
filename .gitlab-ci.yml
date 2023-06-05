@@ -18,7 +18,7 @@ Build:  # name of job
   script:  # script used to run job
     - mkdir data/
     - docker build --compress -t proxy .  # compress when doing deploy jobs, tag it proxy
-    - docker save --output data/image.tar proxy  # save image to image.tar to save as artifact
+    - docker save --output data/image.tar proxy  # save image to image.tar to save as an artifact
   artifacts:
     name: image
     paths:
